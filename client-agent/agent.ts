@@ -577,8 +577,7 @@ async function sendMessageToMerchant(
 - Price: ${priceUSDC} USDC (${price.toString()} atomic units)
 - Network: ${paymentOption.network}
 - Payment Token: ${paymentOption.extra?.name || 'USDC'}
-
-- Merchant: ${paymentOption.payTo}
+- Merchant Address: ${paymentOption.payTo}
 
 Would you like to proceed with this payment?`;
         }

@@ -61,7 +61,8 @@ socket.on('response_complete', (data) => {
       const productMatch = data.text.match(/Product:\s*(.+)/i) || data.text.match(/for the (.+?)\./i);
       const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i)
         || data.text.match(/requesting\s*([0-9.]+)\s*USDC/i);
-      const merchantMatch = data.text.match(/Merchant(?: Address)?:\s*(0x[a-fA-F0-9]{40})/i);
+      const merchantMatch = data.text.match(/Merchant(?: Address)?:\s*(0x[a-fA-F0-9]{40})/i)
+        || data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i);
       const amountAtomic = priceMatch?.[2] || (priceMatch?.[1] ? String(Math.round(Number(priceMatch[1]) * 1_000_000)) : null);
       lastPayment = {
         product: productMatch?.[1]?.trim(),
@@ -147,11 +148,7 @@ async function refreshUsdcBalance() {
   }
 
   try {
-    const code = await provider.getCode(chain.usdc);
-    if (!code || code === '0x') {
-      usdcEl.textContent = 'No USDC contract';
-      return;
-    }
+    // skip contract code check; rely on balance call
     const erc20Abi = ['function balanceOf(address owner) view returns (uint256)', 'function decimals() view returns (uint8)'];
     const contract = new ethers.Contract(chain.usdc, erc20Abi, provider);
     const bal = await contract.balanceOf(currentAddress);
