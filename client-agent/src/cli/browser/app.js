@@ -1,5 +1,7 @@
 const socket = io();
 
+const DEFAULT_MERCHANT = '0x9f869e3029aCcB093ae7ab0cD244CcC6D9EAB554';
+
 const connectBtn = document.getElementById('connectBtn');
 const statusEl = document.getElementById('status');
 const addressEl = document.getElementById('address');
@@ -60,7 +62,7 @@ socket.on('response_complete', (data) => {
       lastPayment = {
         product: productMatch?.[1]?.trim(),
         amountAtomic,
-        merchant: merchantMatch?.[1]?.trim(),
+        merchant: merchantMatch?.[1]?.trim() || DEFAULT_MERCHANT,
       };
       console.log('Parsed payment details', lastPayment);
     }
