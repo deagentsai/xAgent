@@ -126,11 +126,26 @@ async function connectWallet() {
   currentAddress = await signer.getAddress();
 
   try {
+    await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
+      chainId: '0x14a34',
+      chainName: 'Base Sepolia',
+      rpcUrls: ['https://sepolia.base.org'],
+      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+      blockExplorerUrls: ['https://sepolia.basescan.org']
+    }]});
+  } catch (err) {
+    // ignore add chain errors
+  }
+
+  try {
     await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x14a34' }] });
   } catch (err) {
     // ignore; user may need to switch manually
   }
 
+  // refresh provider/signer after chain switch
+  provider = new ethers.BrowserProvider(window.ethereum);
+  signer = await provider.getSigner();
   const chainId = await provider.send('eth_chainId', []);
   if (chainId && CHAINS[chainId]) {
     chainSelect.value = chainId;
@@ -184,9 +199,15 @@ async function executeMetaMaskPayment(details) {
   if (!details?.merchant || !details?.amountAtomic) {
     throw new Error('Missing payment details');
   }
-  const chainId = chainSelect.value;
-  const chain = CHAINS[chainId];
-  if (!chain) throw new Error('Unsupported chain');
+  const chainId = await provider.send('eth_chainId', []);
+  if (chainId !== '0x14a34') {
+    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x14a34' }] });
+  }
+  const chain = CHAINS['0x14a34'];
+
+  // re-init signer after chain switch
+  provider = new ethers.BrowserProvider(window.ethereum);
+  signer = await provider.getSigner();
 
   // USDC transfer
   const erc20Abi = ['function transfer(address to, uint256 value) returns (bool)'];
