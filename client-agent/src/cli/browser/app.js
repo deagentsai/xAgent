@@ -55,6 +55,7 @@ socket.on('response_complete', (data) => {
     if (data.text.toLowerCase().includes('payment') || data.text.toLowerCase().includes('requesting')) {
       const productMatch = data.text.match(/Product:\s*(.+)/i) || data.text.match(/for the (.+?)\./i);
       const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i)
+        || data.text.match(/Price:\s*([0-9.]+)\s*USDC/i)
         || data.text.match(/requesting\s*([0-9.]+)\s*USDC/i);
       const merchantMatch = data.text.match(/Merchant(?: Address)?:\s*(0x[a-fA-F0-9]{40})/i)
         || data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i)
