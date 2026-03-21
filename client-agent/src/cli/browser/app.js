@@ -21,14 +21,6 @@ const CHAINS = {
     name: 'Base Sepolia',
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
   },
-  '0x2105': {
-    name: 'Base',
-    usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  },
-  '0x1': {
-    name: 'Ethereum',
-    usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  },
 };
 
 function addMessage(text, role = 'assistant') {
@@ -69,6 +61,7 @@ socket.on('response_complete', (data) => {
         amountAtomic,
         merchant: merchantMatch?.[1]?.trim(),
       };
+      console.log('Parsed payment details', lastPayment);
     }
   }
 });
@@ -86,6 +79,10 @@ sendBtn.addEventListener('click', async () => {
   const lower = msg.toLowerCase();
   if (lastPayment && (lower === 'proceed' || lower === 'yes')) {
     try {
+      if (!lastPayment.merchant || !lastPayment.amountAtomic) {
+        addMessage(`Payment failed: Missing payment details. Parsed: ${JSON.stringify(lastPayment)}`, 'assistant');
+        return;
+      }
       await executeMetaMaskPayment(lastPayment);
       return;
     } catch (err) {
