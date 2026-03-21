@@ -81,6 +81,18 @@ sendBtn.addEventListener('click', async () => {
   inputEl.value = '';
 
   const lower = msg.toLowerCase();
+  if (lower.includes('market insight')) {
+    socket.emit('message', { message: 'I want to buy Market Insights' });
+    return;
+  }
+  if (lower.includes('crypto news') || (lower.includes('news') && lower.includes('crypto'))) {
+    socket.emit('message', { message: 'I want to buy Crypto News' });
+    return;
+  }
+  if (lower.includes('wallet search') || (lower.includes('wallet') && lower.includes('search'))) {
+    socket.emit('message', { message: 'I want to buy Wallet Search' });
+    return;
+  }
   if (lastPayment && (lower === 'proceed' || lower === 'yes')) {
     try {
       if (!lastPayment.merchant || !lastPayment.amountAtomic) {
