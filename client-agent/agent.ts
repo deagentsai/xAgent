@@ -578,6 +578,8 @@ async function sendMessageToMerchant(
 - Network: ${paymentOption.network}
 - Payment Token: ${paymentOption.extra?.name || 'USDC'}
 
+- Merchant: ${paymentOption.payTo}
+
 Would you like to proceed with this payment?`;
         }
       }

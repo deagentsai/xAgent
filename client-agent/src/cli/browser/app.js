@@ -57,17 +57,15 @@ socket.on('response_complete', (data) => {
   if (data?.text) {
     addMessage(data.text, 'assistant');
     // parse payment details
-    if (data.text.includes('Payment Details:')) {
-      const productMatch = data.text.match(/Product:\s*(.+)/i);
-      const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i);
-      const tokenMatch = data.text.match(/Payment Token:\s*(.+)/i);
-      const networkMatch = data.text.match(/Network:\s*(.+)/i);
+    if (data.text.toLowerCase().includes('payment') || data.text.toLowerCase().includes('requesting')) {
+      const productMatch = data.text.match(/Product:\s*(.+)/i) || data.text.match(/for the (.+?)\./i);
+      const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i)
+        || data.text.match(/requesting\s*([0-9.]+)\s*USDC/i);
       const merchantMatch = data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i);
+      const amountAtomic = priceMatch?.[2] || (priceMatch?.[1] ? String(Math.round(Number(priceMatch[1]) * 1_000_000)) : null);
       lastPayment = {
         product: productMatch?.[1]?.trim(),
-        amountAtomic: priceMatch?.[2],
-        tokenName: tokenMatch?.[1]?.trim(),
-        network: networkMatch?.[1]?.trim(),
+        amountAtomic,
         merchant: merchantMatch?.[1]?.trim(),
       };
     }
@@ -213,7 +211,21 @@ async function executeMetaMaskPayment(details) {
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Payment relay failed');
 
-  addMessage('✅ Payment relayed to merchant.', 'assistant');
+  // Try to surface merchant response
+  const events = data?.data?.events || data?.data?.data?.events || [];
+  let merchantText = '';
+  for (const event of events) {
+    const msg = event?.status?.message;
+    const parts = msg?.parts || [];
+    const text = parts.map((p) => p.text).filter(Boolean).join('\n');
+    if (text) merchantText = text;
+  }
+  if (merchantText) {
+    addMessage(`✅ Payment relayed.\n${merchantText}`, 'assistant');
+  } else {
+    addMessage('✅ Payment relayed to merchant.', 'assistant');
+  }
+
   lastPayment = null;
 }
 
