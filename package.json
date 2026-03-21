@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "install:all": "npm install --workspaces",
-    "postinstall": "node scripts/fix-adk-case.js && node scripts/patch-adk-litellm.js",
+    "postinstall": "node scripts/fix-adk-case.js && node scripts/patch-adk-litellm.js && node client-agent/scripts/patch-adk-webserver.js",
     "fix:adk": "node scripts/fix-adk-case.js",
     "fix:litellm": "node scripts/patch-adk-litellm.js",
     "build:lib": "npm --workspace a2a-x402 run build",

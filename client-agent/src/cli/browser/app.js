@@ -51,19 +51,50 @@ socket.on('response', (data) => {
   if (data?.text) addMessage(data.text, 'assistant');
 });
 
+let lastPayment = null;
+
 socket.on('response_complete', (data) => {
-  if (data?.text) addMessage(data.text, 'assistant');
+  if (data?.text) {
+    addMessage(data.text, 'assistant');
+    // parse payment details
+    if (data.text.includes('Payment Details:')) {
+      const productMatch = data.text.match(/Product:\s*(.+)/i);
+      const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i);
+      const tokenMatch = data.text.match(/Payment Token:\s*(.+)/i);
+      const networkMatch = data.text.match(/Network:\s*(.+)/i);
+      const merchantMatch = data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i);
+      lastPayment = {
+        product: productMatch?.[1]?.trim(),
+        amountAtomic: priceMatch?.[2],
+        tokenName: tokenMatch?.[1]?.trim(),
+        network: networkMatch?.[1]?.trim(),
+        merchant: merchantMatch?.[1]?.trim(),
+      };
+    }
+  }
 });
 
 socket.on('error', (err) => {
   addMessage(`Error: ${err?.message || err?.error || 'Unknown error'}`, 'assistant');
 });
 
-sendBtn.addEventListener('click', () => {
+sendBtn.addEventListener('click', async () => {
   const msg = inputEl.value.trim();
   if (!msg) return;
   addMessage(msg, 'user');
   inputEl.value = '';
+
+  const lower = msg.toLowerCase();
+  if (lastPayment && (lower === 'proceed' || lower === 'yes')) {
+    try {
+      await executeMetaMaskPayment(lastPayment);
+      return;
+    } catch (err) {
+      addMessage(`Payment failed: ${err?.message || err}`, 'assistant');
+      return;
+    }
+  }
+
   socket.emit('message', { message: msg });
 });
 
@@ -143,6 +174,47 @@ async function refreshEthBalance() {
   } catch (err) {
     ethEl.textContent = 'Unavailable';
   }
+}
+
+async function executeMetaMaskPayment(details) {
+  if (!provider || !signer || !currentAddress) {
+    throw new Error('Wallet not connected');
+  }
+  if (!details?.merchant || !details?.amountAtomic) {
+    throw new Error('Missing payment details');
+  }
+  const chainId = chainSelect.value;
+  const chain = CHAINS[chainId];
+  if (!chain) throw new Error('Unsupported chain');
+
+  // USDC transfer
+  const erc20Abi = ['function transfer(address to, uint256 value) returns (bool)'];
+  const contract = new ethers.Contract(chain.usdc, erc20Abi, signer);
+  const tx = await contract.transfer(details.merchant, details.amountAtomic);
+  addMessage(`Submitting payment tx: ${tx.hash}`, 'assistant');
+  const receipt = await tx.wait();
+
+  // Relay to backend
+  const payload = {
+    merchantUrl: 'http://localhost:10000',
+    productName: details.product || 'product',
+    txHash: receipt?.hash || tx.hash,
+    payer: currentAddress,
+    amount: details.amountAtomic,
+    tokenAddress: chain.usdc,
+    network: chain.name,
+  };
+
+  const res = await fetch('/api/payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Payment relay failed');
+
+  addMessage('✅ Payment relayed to merchant.', 'assistant');
+  lastPayment = null;
 }
 
 connectBtn.addEventListener('click', connectWallet);
