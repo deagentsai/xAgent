@@ -95,7 +95,12 @@ async function connectWallet() {
   signer = await provider.getSigner();
   currentAddress = await signer.getAddress();
 
-  statusEl.textContent = 'Connected';
+  const chainId = await provider.send('eth_chainId', []);
+  if (chainId && CHAINS[chainId]) {
+    chainSelect.value = chainId;
+  }
+
+  statusEl.textContent = `Connected (${CHAINS[chainSelect.value]?.name || chainSelect.value})`;
   addressEl.textContent = currentAddress;
   renderAccounts();
 
@@ -107,20 +112,31 @@ async function refreshUsdcBalance() {
   if (!provider || !currentAddress) return;
   const chainId = chainSelect.value;
   const chain = CHAINS[chainId];
-  if (!chain) return;
+  if (!chain) {
+    usdcEl.textContent = '—';
+    return;
+  }
 
-  const erc20Abi = ['function balanceOf(address owner) view returns (uint256)', 'function decimals() view returns (uint8)'];
-  const contract = new ethers.Contract(chain.usdc, erc20Abi, provider);
-  const bal = await contract.balanceOf(currentAddress);
-  const decimals = await contract.decimals();
-  const formatted = ethers.formatUnits(bal, decimals);
-  usdcEl.textContent = `${Number(formatted).toFixed(4)} USDC`;
+  try {
+    const erc20Abi = ['function balanceOf(address owner) view returns (uint256)', 'function decimals() view returns (uint8)'];
+    const contract = new ethers.Contract(chain.usdc, erc20Abi, provider);
+    const bal = await contract.balanceOf(currentAddress);
+    const decimals = await contract.decimals();
+    const formatted = ethers.formatUnits(bal, decimals);
+    usdcEl.textContent = `${Number(formatted).toFixed(4)} USDC`;
+  } catch (err) {
+    usdcEl.textContent = 'Unavailable';
+  }
 }
 
 async function refreshEthBalance() {
   if (!provider || !currentAddress) return;
-  const bal = await provider.getBalance(currentAddress);
-  ethEl.textContent = `${Number(ethers.formatEther(bal)).toFixed(4)} ETH`;
+  try {
+    const bal = await provider.getBalance(currentAddress);
+    ethEl.textContent = `${Number(ethers.formatEther(bal)).toFixed(4)} ETH`;
+  } catch (err) {
+    ethEl.textContent = 'Unavailable';
+  }
 }
 
 connectBtn.addEventListener('click', connectWallet);
@@ -138,6 +154,7 @@ if (window.ethereum) {
     currentAddress = accounts[0] || null;
     addressEl.textContent = currentAddress || '—';
     renderAccounts();
+    statusEl.textContent = `Connected (${CHAINS[chainSelect.value]?.name || chainSelect.value})`;
     refreshUsdcBalance();
     refreshEthBalance();
   });
@@ -153,6 +170,7 @@ chainSelect.addEventListener('change', async () => {
   } catch (err) {
     console.warn('Chain switch failed', err);
   }
+  statusEl.textContent = `Connected (${CHAINS[chainSelect.value]?.name || chainSelect.value})`;
   await refreshUsdcBalance();
   await refreshEthBalance();
 });
