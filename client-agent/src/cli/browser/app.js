@@ -118,6 +118,11 @@ async function refreshUsdcBalance() {
   }
 
   try {
+    const code = await provider.getCode(chain.usdc);
+    if (!code || code === '0x') {
+      usdcEl.textContent = 'No USDC contract';
+      return;
+    }
     const erc20Abi = ['function balanceOf(address owner) view returns (uint256)', 'function decimals() view returns (uint8)'];
     const contract = new ethers.Contract(chain.usdc, erc20Abi, provider);
     const bal = await contract.balanceOf(currentAddress);
@@ -125,6 +130,7 @@ async function refreshUsdcBalance() {
     const formatted = ethers.formatUnits(bal, decimals);
     usdcEl.textContent = `${Number(formatted).toFixed(4)} USDC`;
   } catch (err) {
+    console.warn('USDC fetch failed', err);
     usdcEl.textContent = 'Unavailable';
   }
 }
