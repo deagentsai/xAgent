@@ -7,6 +7,7 @@ const statusEl = document.getElementById('status');
 const addressEl = document.getElementById('address');
 const accountSelect = document.getElementById('accountSelect');
 const chainSelect = document.getElementById('chainSelect');
+const chainIdEl = document.getElementById('chainId');
 const usdcEl = document.getElementById('usdc');
 const ethEl = document.getElementById('eth');
 const messagesEl = document.getElementById('messages');
@@ -150,6 +151,7 @@ async function connectWallet() {
   if (chainId && CHAINS[chainId]) {
     chainSelect.value = chainId;
   }
+  chainIdEl.textContent = chainId || '—';
 
   statusEl.textContent = `Connected (${CHAINS[chainSelect.value]?.name || chainSelect.value})`;
   addressEl.textContent = currentAddress;
@@ -283,6 +285,7 @@ if (window.ethereum) {
       chainSelect.value = chainId;
       statusEl.textContent = `Connected (${CHAINS[chainId].name})`;
     }
+    chainIdEl.textContent = chainId || '—';
     refreshUsdcBalance();
     refreshEthBalance();
   });
