@@ -55,12 +55,19 @@ socket.on('response_complete', (data) => {
     if (data.text.toLowerCase().includes('payment') || data.text.toLowerCase().includes('requesting')) {
       const productMatch = data.text.match(/Product:\s*(.+)/i) || data.text.match(/for the (.+?)\./i);
       const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i)
-        || data.text.match(/Price:\s*([0-9.]+)\s*USDC/i)
-        || data.text.match(/requesting\s*([0-9.]+)\s*USDC/i);
+        || data.text.match(/Price:\s*([^0-9]*)([0-9.]+)\s*USDC/i)
+        || data.text.match(/requesting\s*([0-9.]+)\s*USDC/i)
+        || data.text.match(/([0-9.]+)\s*USDC/i);
       const merchantMatch = data.text.match(/Merchant(?: Address)?:\s*(0x[a-fA-F0-9]{40})/i)
         || data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i)
         || data.text.match(/payTo:\s*(0x[a-fA-F0-9]{40})/i);
-      const amountAtomic = priceMatch?.[2] || (priceMatch?.[1] ? String(Math.round(Number(priceMatch[1]) * 1_000_000)) : null);
+      let rawNumber = null;
+      if (priceMatch) {
+        rawNumber = priceMatch[2] || priceMatch[1] || priceMatch[3];
+      }
+      const amountAtomic = priceMatch?.[2]
+        ? priceMatch[2]
+        : (rawNumber ? String(Math.round(Number(rawNumber) * 1_000_000)) : null);
       const rawProduct = productMatch?.[1]?.trim() || '';
       const cleanedProduct = rawProduct.replace(/^[-*\s]+/, '').trim();
       lastPayment = {
