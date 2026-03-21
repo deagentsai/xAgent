@@ -257,6 +257,37 @@ async function executeMetaMaskPayment(details) {
     addMessage('✅ Payment relayed to merchant.', 'assistant');
   }
 
+  // If this was a Market Insights purchase, fetch and display insights
+  const productLower = (details.product || '').toLowerCase();
+  if (productLower.includes('market')) {
+    try {
+      const insights = await getMarketInsightsSnapshot(30);
+      addMessage(`Market Insights (Live):\n${insights}`, 'assistant');
+    } catch (err) {
+      addMessage('Market Insights unavailable (failed to fetch live data).', 'assistant');
+    }
+  }
+
+  // If this was a Crypto News purchase, fetch and display news
+  if (productLower.includes('news')) {
+    try {
+      const apiKey = window.FINNHUB_API_KEY || ''; // fallback if injected
+      const res = await fetch(`https://finnhub.io/api/v1/news?category=crypto&token=${apiKey}`);
+      const news = await res.json();
+      const items = Array.isArray(news) ? news.slice(0, 20) : [];
+      const formatted = items.map((item, idx) => {
+        const title = item?.headline || 'Untitled';
+        const topic = item?.category ? `Topic: ${item.category}` : 'Topic: crypto';
+        const source = item?.source ? `Source: ${item.source}` : 'Source: finnhub';
+        const url = item?.url || '';
+        return `${idx + 1}. ${title}\n${topic}\n${source}\n${url}`.trim();
+      }).join('\n\n');
+      addMessage(`Crypto News (Top 20):\n${formatted || 'No news returned.'}`, 'assistant');
+    } catch (err) {
+      addMessage('Crypto News unavailable (failed to fetch).', 'assistant');
+    }
+  }
+
   lastPayment = null;
 }
 
