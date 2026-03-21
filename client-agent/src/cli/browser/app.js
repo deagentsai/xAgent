@@ -261,8 +261,12 @@ async function executeMetaMaskPayment(details) {
   const productLower = (details.product || '').toLowerCase();
   if (productLower.includes('market')) {
     try {
-      const insights = await getMarketInsightsSnapshot(30);
-      addMessage(`Market Insights (Live):\n${insights}`, 'assistant');
+      const res = await fetch('/api/market-insights?days=30');
+      const data = await res.json();
+      const price = data?.btcPrice ? `$${Number(data.btcPrice).toFixed(2)}` : 'Unavailable';
+      const corr = data?.correlation === null || data?.correlation === undefined ? 'Unavailable' : Number(data.correlation).toFixed(4);
+      const msg = `Market Insights (Live):\n- BTC price: ${price} (source: ${data?.priceSource || 'n/a'})\n- BTC/ETH correlation (30d): ${corr} (source: ${data?.corrSource || 'n/a'})`;
+      addMessage(msg, 'assistant');
     } catch (err) {
       addMessage('Market Insights unavailable (failed to fetch live data).', 'assistant');
     }
