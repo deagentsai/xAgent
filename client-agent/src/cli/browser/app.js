@@ -199,15 +199,20 @@ async function executeMetaMaskPayment(details) {
   if (!details?.merchant || !details?.amountAtomic) {
     throw new Error('Missing payment details');
   }
-  const chainId = await provider.send('eth_chainId', []);
+  let chainId = await provider.send('eth_chainId', []);
   if (chainId !== '0x14a34') {
     await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x14a34' }] });
+    // wait a tick for MetaMask to update
+    await new Promise(r => setTimeout(r, 500));
   }
-  const chain = CHAINS['0x14a34'];
-
-  // re-init signer after chain switch
+  // re-init after switch
   provider = new ethers.BrowserProvider(window.ethereum);
   signer = await provider.getSigner();
+  chainId = await provider.send('eth_chainId', []);
+  if (chainId !== '0x14a34') {
+    throw new Error(`Wrong chain: ${chainId}. Please switch to Base Sepolia (84532).`);
+  }
+  const chain = CHAINS['0x14a34'];
 
   // USDC transfer
   const erc20Abi = ['function transfer(address to, uint256 value) returns (bool)'];
