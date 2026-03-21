@@ -6,6 +6,7 @@ const addressEl = document.getElementById('address');
 const accountSelect = document.getElementById('accountSelect');
 const chainSelect = document.getElementById('chainSelect');
 const usdcEl = document.getElementById('usdc');
+const ethEl = document.getElementById('eth');
 const messagesEl = document.getElementById('messages');
 const inputEl = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -47,6 +48,10 @@ socket.on('agent_initialized', () => {
 });
 
 socket.on('response', (data) => {
+  if (data?.text) addMessage(data.text, 'assistant');
+});
+
+socket.on('response_complete', (data) => {
   if (data?.text) addMessage(data.text, 'assistant');
 });
 
@@ -95,6 +100,7 @@ async function connectWallet() {
   renderAccounts();
 
   await refreshUsdcBalance();
+  await refreshEthBalance();
 }
 
 async function refreshUsdcBalance() {
@@ -111,12 +117,19 @@ async function refreshUsdcBalance() {
   usdcEl.textContent = `${Number(formatted).toFixed(4)} USDC`;
 }
 
+async function refreshEthBalance() {
+  if (!provider || !currentAddress) return;
+  const bal = await provider.getBalance(currentAddress);
+  ethEl.textContent = `${Number(ethers.formatEther(bal)).toFixed(4)} ETH`;
+}
+
 connectBtn.addEventListener('click', connectWallet);
 
 accountSelect.addEventListener('change', async () => {
   currentAddress = accountSelect.value;
   addressEl.textContent = currentAddress;
   await refreshUsdcBalance();
+  await refreshEthBalance();
 });
 
 if (window.ethereum) {
@@ -126,6 +139,7 @@ if (window.ethereum) {
     addressEl.textContent = currentAddress || '—';
     renderAccounts();
     refreshUsdcBalance();
+    refreshEthBalance();
   });
 }
 
@@ -140,4 +154,5 @@ chainSelect.addEventListener('change', async () => {
     console.warn('Chain switch failed', err);
   }
   await refreshUsdcBalance();
+  await refreshEthBalance();
 });
