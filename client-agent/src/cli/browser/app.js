@@ -3,6 +3,7 @@ const socket = io();
 const connectBtn = document.getElementById('connectBtn');
 const statusEl = document.getElementById('status');
 const addressEl = document.getElementById('address');
+const accountSelect = document.getElementById('accountSelect');
 const chainSelect = document.getElementById('chainSelect');
 const usdcEl = document.getElementById('usdc');
 const messagesEl = document.getElementById('messages');
@@ -12,6 +13,7 @@ const sendBtn = document.getElementById('sendBtn');
 let provider = null;
 let signer = null;
 let currentAddress = null;
+let accounts = [];
 
 const CHAINS = {
   '0xaa36a7': {
@@ -64,6 +66,19 @@ inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendBtn.click();
 });
 
+function renderAccounts() {
+  accountSelect.innerHTML = '';
+  accounts.forEach((acct) => {
+    const opt = document.createElement('option');
+    opt.value = acct;
+    opt.textContent = acct;
+    accountSelect.appendChild(opt);
+  });
+  if (currentAddress) {
+    accountSelect.value = currentAddress;
+  }
+}
+
 async function connectWallet() {
   if (!window.ethereum) {
     statusEl.textContent = 'MetaMask not found';
@@ -71,12 +86,13 @@ async function connectWallet() {
   }
 
   provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send('eth_requestAccounts', []);
+  accounts = await provider.send('eth_requestAccounts', []);
   signer = await provider.getSigner();
   currentAddress = await signer.getAddress();
 
   statusEl.textContent = 'Connected';
   addressEl.textContent = currentAddress;
+  renderAccounts();
 
   await refreshUsdcBalance();
 }
@@ -96,6 +112,22 @@ async function refreshUsdcBalance() {
 }
 
 connectBtn.addEventListener('click', connectWallet);
+
+accountSelect.addEventListener('change', async () => {
+  currentAddress = accountSelect.value;
+  addressEl.textContent = currentAddress;
+  await refreshUsdcBalance();
+});
+
+if (window.ethereum) {
+  window.ethereum.on('accountsChanged', (newAccounts) => {
+    accounts = newAccounts || [];
+    currentAddress = accounts[0] || null;
+    addressEl.textContent = currentAddress || '—';
+    renderAccounts();
+    refreshUsdcBalance();
+  });
+}
 
 chainSelect.addEventListener('change', async () => {
   if (!window.ethereum) return;

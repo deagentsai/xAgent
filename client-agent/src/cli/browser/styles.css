@@ -41,6 +41,10 @@ header p { margin: 4px 0 20px; color: #9aa4b2; }
 
 .label { color: #9aa4b2; font-size: 12px; margin-bottom: 4px; }
 
+.account-select {
+  margin-top: 6px;
+}
+
 button {
   background: #2563eb;
   color: white;
