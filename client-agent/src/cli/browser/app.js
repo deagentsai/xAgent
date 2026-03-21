@@ -17,7 +17,7 @@ let currentAddress = null;
 let accounts = [];
 
 const CHAINS = {
-  '0xaa36a7': {
+  '0x14a34': {
     name: 'Base Sepolia',
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
   },
