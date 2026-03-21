@@ -158,6 +158,15 @@ if (window.ethereum) {
     refreshUsdcBalance();
     refreshEthBalance();
   });
+
+  window.ethereum.on('chainChanged', (chainId) => {
+    if (chainId && CHAINS[chainId]) {
+      chainSelect.value = chainId;
+      statusEl.textContent = `Connected (${CHAINS[chainId].name})`;
+    }
+    refreshUsdcBalance();
+    refreshEthBalance();
+  });
 }
 
 chainSelect.addEventListener('change', async () => {
