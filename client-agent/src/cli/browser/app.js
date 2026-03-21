@@ -54,7 +54,8 @@ socket.on('response_complete', (data) => {
       const priceMatch = data.text.match(/Price:\s*([0-9.]+)\s*USDC\s*\((\d+) atomic units\)/i)
         || data.text.match(/requesting\s*([0-9.]+)\s*USDC/i);
       const merchantMatch = data.text.match(/Merchant(?: Address)?:\s*(0x[a-fA-F0-9]{40})/i)
-        || data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i);
+        || data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i)
+        || data.text.match(/payTo:\s*(0x[a-fA-F0-9]{40})/i);
       const amountAtomic = priceMatch?.[2] || (priceMatch?.[1] ? String(Math.round(Number(priceMatch[1]) * 1_000_000)) : null);
       lastPayment = {
         product: productMatch?.[1]?.trim(),
@@ -121,6 +122,12 @@ async function connectWallet() {
   accounts = await provider.send('eth_requestAccounts', []);
   signer = await provider.getSigner();
   currentAddress = await signer.getAddress();
+
+  try {
+    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x14a34' }] });
+  } catch (err) {
+    // ignore; user may need to switch manually
+  }
 
   const chainId = await provider.send('eth_chainId', []);
   if (chainId && CHAINS[chainId]) {

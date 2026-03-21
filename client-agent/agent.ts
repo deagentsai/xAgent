@@ -579,6 +579,8 @@ async function sendMessageToMerchant(
 - Payment Token: ${paymentOption.extra?.name || 'USDC'}
 - Merchant Address: ${paymentOption.payTo}
 
+- Merchant Address: ${paymentOption.payTo}
+
 Would you like to proceed with this payment?`;
         }
       }
