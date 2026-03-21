@@ -61,8 +61,10 @@ socket.on('response_complete', (data) => {
         || data.text.match(/Merchant:\s*(0x[a-fA-F0-9]{40})/i)
         || data.text.match(/payTo:\s*(0x[a-fA-F0-9]{40})/i);
       const amountAtomic = priceMatch?.[2] || (priceMatch?.[1] ? String(Math.round(Number(priceMatch[1]) * 1_000_000)) : null);
+      const rawProduct = productMatch?.[1]?.trim() || '';
+      const cleanedProduct = rawProduct.replace(/^[-*\s]+/, '').trim();
       lastPayment = {
-        product: productMatch?.[1]?.trim(),
+        product: cleanedProduct || rawProduct,
         amountAtomic,
         merchant: DEFAULT_MERCHANT,
       };
