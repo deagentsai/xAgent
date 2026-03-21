@@ -68,11 +68,14 @@ socket.on('response_complete', (data) => {
       const amountAtomic = priceMatch?.[2]
         ? priceMatch[2]
         : (rawNumber ? String(Math.round(Number(rawNumber) * 1_000_000)) : null);
+      const normalizedAtomic = (amountAtomic && amountAtomic.includes('.'))
+        ? (amountAtomic.split('.')[0] || '0') + (amountAtomic.split('.')[1] || '').padEnd(6, '0').slice(0, 6)
+        : amountAtomic;
       const rawProduct = productMatch?.[1]?.trim() || '';
       const cleanedProduct = rawProduct.replace(/^[-*\s]+/, '').trim();
       lastPayment = {
         product: cleanedProduct || rawProduct,
-        amountAtomic,
+        amountAtomic: normalizedAtomic || amountAtomic,
         merchant: DEFAULT_MERCHANT,
       };
       console.log('Parsed payment details', lastPayment);
