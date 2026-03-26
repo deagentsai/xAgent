@@ -77,6 +77,13 @@ const PRODUCT_CATALOG = [
     priceAtomic: "4000", // 0.004 USDC
     link: "https://example.com/wallet-search",
   },
+  {
+    id: "token-swap",
+    name: "Token Swap (Uniswap Mainnet)",
+    description: "Swap USDC <-> token on Ethereum mainnet via Uniswap V3. Fee paid on Base Sepolia.",
+    priceAtomic: "2000", // 0.002 USDC
+    link: "https://app.uniswap.org",
+  },
 ];
 
 console.log(`💼 Merchant Configuration:
@@ -251,6 +258,8 @@ async function getProductDetailsAndRequestPayment(
       product = PRODUCT_CATALOG.find((item) => item.id === 'crypto-news');
     } else if (lower.includes('wallet')) {
       product = PRODUCT_CATALOG.find((item) => item.id === 'wallet-search');
+    } else if (lower.includes('swap')) {
+      product = PRODUCT_CATALOG.find((item) => item.id === 'token-swap');
     }
   }
 
@@ -356,6 +365,7 @@ export const merchantAgent = new Agent({
 - Market Insights (live BTC price + BTC/ETH correlation) — 0.001 USDC
 - Crypto News (latest 20 headlines) — 0.003 USDC
 - Wallet Search (EVM + Solana) — 0.004 USDC
+- Token Swap (Uniswap Mainnet) — 0.002 USDC
 
 **Critical Rules:**
 - ALWAYS call getProductDetailsAndRequestPayment when a user wants to buy the ebook

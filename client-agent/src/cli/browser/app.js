@@ -106,6 +106,10 @@ sendBtn.addEventListener('click', async () => {
     socket.emit('message', { message: 'I want to buy Wallet Search' });
     return;
   }
+  if (lower.includes('swap')) {
+    socket.emit('message', { message: 'I want to buy Token Swap' });
+    return;
+  }
   if (lastPayment && (lower === 'proceed' || lower === 'yes')) {
     try {
       if (!lastPayment.merchant || !lastPayment.amountAtomic) {
@@ -118,6 +122,19 @@ sendBtn.addEventListener('click', async () => {
       addMessage(`Payment failed: ${err?.message || err}`, 'assistant');
       return;
     }
+  }
+
+  // Handle swap input flow
+  if (window.__swapState?.awaiting) {
+    const parts = msg.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length >= 3) {
+      window.__swapState = { token: parts[0], amountUsdc: parts[1], slippage: parts[2] };
+      addMessage(`Got it. Preparing swap: ${parts[1]} USDC -> ${parts[0]} with ${parts[2]}% slippage.`, 'assistant');
+      addMessage('Swap execution is not wired yet. Next step: run Uniswap swap on Ethereum mainnet.', 'assistant');
+      return;
+    }
+    addMessage('Please provide: token, amountUSDC, slippage% (comma separated).', 'assistant');
+    return;
   }
 
   socket.emit('message', { message: msg });
@@ -300,10 +317,9 @@ async function executeMetaMaskPayment(details) {
   // If this was a Crypto News purchase, fetch and display news
   if (productLower.includes('news')) {
     try {
-      const apiKey = window.FINNHUB_API_KEY || ''; // fallback if injected
-      const res = await fetch(`https://finnhub.io/api/v1/news?category=crypto&token=${apiKey}`);
-      const news = await res.json();
-      const items = Array.isArray(news) ? news.slice(0, 20) : [];
+      const res = await fetch('/api/crypto-news');
+      const data = await res.json();
+      const items = Array.isArray(data?.items) ? data.items : [];
       const formatted = items.map((item, idx) => {
         const title = item?.headline || 'Untitled';
         const topic = item?.category ? `Topic: ${item.category}` : 'Topic: crypto';
@@ -315,6 +331,11 @@ async function executeMetaMaskPayment(details) {
     } catch (err) {
       addMessage('Crypto News unavailable (failed to fetch).', 'assistant');
     }
+  }
+
+  if (productLower.includes('swap')) {
+    addMessage('Swap purchased ✅\nPlease provide:\n1) Token address or symbol\n2) Amount in USDC\n3) Slippage %', 'assistant');
+    window.__swapState = { awaiting: true };
   }
 
   lastPayment = null;
