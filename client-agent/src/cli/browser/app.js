@@ -126,14 +126,23 @@ sendBtn.addEventListener('click', async () => {
 
   // Handle swap input flow
   if (window.__swapState?.awaiting) {
-    const parts = msg.split(',').map(s => s.trim()).filter(Boolean);
-    if (parts.length >= 3) {
-      window.__swapState = { token: parts[0], amountUsdc: parts[1], slippage: parts[2] };
-      addMessage(`Got it. Preparing swap: ${parts[1]} USDC -> ${parts[0]} with ${parts[2]}% slippage.`, 'assistant');
+    // Accept formats like: "usdt, 0.5, 1%" or "1) usdt, 2) 0.5 usdc, 3) 1%"
+    const tokenMatch = msg.match(/(?:^|,|\s)([A-Za-z0-9]{2,}|0x[a-fA-F0-9]{40})/);
+    const amountMatch = msg.match(/([0-9]*\.?[0-9]+)\s*usdc/i);
+    const slippageMatch = msg.match(/([0-9]*\.?[0-9]+)\s*%/);
+
+    const token = tokenMatch?.[1];
+    const amountUsdc = amountMatch?.[1];
+    const slippage = slippageMatch?.[1];
+
+    if (token && amountUsdc && slippage) {
+      window.__swapState = { token, amountUsdc, slippage };
+      addMessage(`Got it. Preparing swap: ${amountUsdc} USDC -> ${token} with ${slippage}% slippage.`, 'assistant');
       addMessage('Swap execution is not wired yet. Next step: run Uniswap swap on Ethereum mainnet.', 'assistant');
       return;
     }
-    addMessage('Please provide: token, amountUSDC, slippage% (comma separated).', 'assistant');
+
+    addMessage('Please provide: token symbol/address, amount USDC, slippage %.', 'assistant');
     return;
   }
 
